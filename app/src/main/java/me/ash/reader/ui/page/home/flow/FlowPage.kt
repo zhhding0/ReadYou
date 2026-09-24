@@ -147,7 +147,9 @@ fun FlowPage(
 
     val filterUiState = pagerData.filterState
 
-    val listState = rememberSaveable(pagerData, saver = LazyListState.Saver) { LazyListState(0, 0) }
+    val listState = rememberSaveable(pagerData.filterState, saver = LazyListState.Saver) {
+        LazyListState(0, 0)
+    }
 
     val isTopBarElevated = topBarTonalElevation.value > 0
     val scrolledTopBarContainerColor =
@@ -250,19 +252,6 @@ fun FlowPage(
             }
         }
 
-    val snapAppBarToCollapsed =
-        remember(topAppBarState) {
-            {
-                scope.launch {
-                    val initial = topAppBarState.heightOffset
-                    val target = topAppBarState.heightOffsetLimit
-                    if (initial != target) {
-                        topAppBarState.heightOffset = target
-                    }
-                }
-            }
-        }
-
     val readerState = viewModel.readerStateStateFlow.collectAsStateValue()
 
     var pagingItems: LazyPagingItems<ArticleFlowItem>? by remember { mutableStateOf(null) }
@@ -282,24 +271,6 @@ fun FlowPage(
                 if (index != -1) {
                     scrollAppBarToCollapsed()
                     listState.animateScrollToItem(index, scrollOffset = -200)
-                }
-            }
-        }
-    } else {
-        LaunchedEffect(Unit) {
-            if (readerState.articleId != null) {
-                val articleId = readerState.articleId
-
-                val itemList = pagingItems?.itemSnapshotList
-
-                val index =
-                    itemList?.indexOfFirst {
-                        it is ArticleFlowItem.Article && it.articleWithFeed.article.id == articleId
-                    } ?: -1
-
-                if (index != -1) {
-                    snapAppBarToCollapsed()
-                    listState.requestScrollToItem(index, scrollOffset = -400)
                 }
             }
         }
@@ -563,8 +534,6 @@ fun FlowPage(
                             }
                         }
                     }
-
-                    val listState = remember(pager) { listState }
 
                     val isSyncing by rememberUpdatedState(isSyncing)
 

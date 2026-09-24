@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.ash.reader.domain.model.article.ArticleFlowItem
@@ -80,56 +80,68 @@ constructor(
         applicationScope.launch(ioDispatcher) {
             filterStateUseCase.filterStateFlow
                 .combine(accountService.currentAccountIdFlow) { filterState, accountId -> filterState to accountId }
-                .flatMapLatest { (filterState, accountId) ->
-                    articleInterestDao.observeForAccount(accountId ?: -1).map { interests ->
-                        Triple(filterState, accountId, interests.associateBy { it.articleId })
-                    }
+                .combine(settingsProvider.settingsFlow) { (filterState, accountId), settings ->
+                    Triple(filterState, accountId, settings)
                 }
-                .combine(settingsProvider.settingsFlow) { data, settings -> data to settings }
-                .combine(diffMapHolder.diffMapSnapshotFlow) { (data, settings), diffs ->
-                    Triple(data, settings, diffs)
-                }
-                .collect { (data, settings, diffs) ->
-                    val (filterState, accountId, interests) = data
+                .collectLatest { (filterState, accountId, settings) ->
+                    val interests = articleInterestDao.observeForAccount(accountId ?: -1)
+                        .first().associateBy { it.articleId }
                     val searchContent = filterState.searchContent
                     val keywords = settings.interestKeywords.split(',', '\n')
                         .map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(5)
                     val keywordParams = keywords + List(5 - keywords.size) { "" }
+                    val filterType = when {
+                        filterState.filter.isStarred() -> 1
+                        filterState.filter.isUnread() -> 2
+                        else -> 0
+                    }
+                    val sortMode = when (settings.flowSortArticles) {
+                        FlowSortPreference.Latest -> 0
+                        FlowSortPreference.Recommended -> 1
+                        FlowSortPreference.UnreadFirst -> 2
+                        FlowSortPreference.Oldest -> 3
+                    }
+                    val search = searchContent?.trim()?.takeIf { it.isNotBlank() }
+                    // Capture pending read changes only when the Pager is recreated.
+                    val unreadOverrides = diffMapHolder.diffMap.toMap()
+                        .mapValues { (_, diff) -> diff.isUnread }
 
                     mutablePagerFlow.value =
                         PagerData(
                             Pager(
                                     config = PagingConfig(pageSize = 50, enablePlaceholders = false)
                                 ) {
-                                    articleDao.queryRecommendedArticleWithFeed(
-                                        accountId = accountId ?: -1,
-                                        feedId = filterState.feed?.id,
-                                        groupId = filterState.group?.id,
-                                        filterType = when {
-                                            filterState.filter.isStarred() -> 1
-                                            filterState.filter.isUnread() -> 2
-                                            else -> 0
-                                        },
-                                        search = searchContent?.trim()?.takeIf { it.isNotBlank() },
-                                        sortMode = when (settings.flowSortArticles) {
-                                            FlowSortPreference.Latest -> 0
-                                            FlowSortPreference.Recommended -> 1
-                                            FlowSortPreference.UnreadFirst -> 2
-                                            FlowSortPreference.Oldest -> 3
-                                        },
-                                        keyword1 = keywordParams[0],
-                                        keyword2 = keywordParams[1],
-                                        keyword3 = keywordParams[2],
-                                        keyword4 = keywordParams[3],
-                                        keyword5 = keywordParams[4],
-                                    )
+                                    if (sortMode == 1) {
+                                        articleDao.queryRecommendedArticleWithFeed(
+                                            accountId = accountId ?: -1,
+                                            feedId = filterState.feed?.id,
+                                            groupId = filterState.group?.id,
+                                            filterType = filterType,
+                                            search = search,
+                                            sortMode = sortMode,
+                                            keyword1 = keywordParams[0],
+                                            keyword2 = keywordParams[1],
+                                            keyword3 = keywordParams[2],
+                                            keyword4 = keywordParams[3],
+                                            keyword5 = keywordParams[4],
+                                        )
+                                    } else {
+                                        articleDao.queryArticleWithFeedSorted(
+                                            accountId = accountId ?: -1,
+                                            feedId = filterState.feed?.id,
+                                            groupId = filterState.group?.id,
+                                            filterType = filterType,
+                                            search = search,
+                                            sortMode = sortMode,
+                                        )
+                                    }
                                 }
                                 .flow
                                 .map {
                                     it.filterUnreadAndDistinctByArticleTitle(
                                         dispatcher = defaultDispatcher,
                                         unreadOnly = filterState.filter.isUnread(),
-                                        unreadOverrides = diffs.mapValues { (_, diff) -> diff.isUnread },
+                                        unreadOverrides = unreadOverrides,
                                     ).mapPagingFlowItem(
                                         androidStringsHelper = androidStringsHelper,
                                         interests = interests,

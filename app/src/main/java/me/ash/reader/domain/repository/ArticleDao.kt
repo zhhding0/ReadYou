@@ -25,6 +25,32 @@ interface ArticleDao {
     @Query(
         """
         SELECT a.* FROM article a
+        LEFT JOIN feed f ON f.id = a.feedId
+        WHERE a.accountId = :accountId
+          AND (:feedId IS NULL OR a.feedId = :feedId)
+          AND (:groupId IS NULL OR f.groupId = :groupId)
+          AND (:filterType = 0 OR (:filterType = 1 AND a.isStarred = 1) OR (:filterType = 2 AND a.isUnread = 1))
+          AND (:search IS NULL OR a.title LIKE '%' || :search || '%' OR a.shortDescription LIKE '%' || :search || '%' OR a.rawDescription LIKE '%' || :search || '%' OR a.fullContent LIKE '%' || :search || '%')
+        ORDER BY
+          CASE WHEN :sortMode = 2 THEN a.isUnread END DESC,
+          CASE WHEN :sortMode = 3 THEN a.date END ASC,
+          CASE WHEN :sortMode != 3 THEN a.date END DESC,
+          a.id DESC
+        """
+    )
+    fun queryArticleWithFeedSorted(
+        accountId: Int,
+        feedId: String?,
+        groupId: String?,
+        filterType: Int,
+        search: String?,
+        sortMode: Int,
+    ): PagingSource<Int, ArticleWithFeed>
+
+    @Transaction
+    @Query(
+        """
+        SELECT a.* FROM article a
         LEFT JOIN article_interest i ON i.accountId = a.accountId AND i.articleId = a.id
         LEFT JOIN feed f ON f.id = a.feedId
         WHERE a.accountId = :accountId
@@ -38,11 +64,11 @@ interface ArticleDao {
               CASE WHEN i.openMillis >= 30000 THEN 10 WHEN i.openMillis >= 5000 THEN 4 ELSE 0 END +
               CASE WHEN i.completed = 1 THEN 12 ELSE 0 END +
               COALESCE(MIN(i.shares, 3), 0) * 5 +
-              CASE WHEN :keyword1 <> '' AND (lower(a.title) LIKE '%' || lower(:keyword1) || '%' OR lower(a.shortDescription) LIKE '%' || lower(:keyword1) || '%') THEN 8 ELSE 0 END +
-              CASE WHEN :keyword2 <> '' AND (lower(a.title) LIKE '%' || lower(:keyword2) || '%' OR lower(a.shortDescription) LIKE '%' || lower(:keyword2) || '%') THEN 8 ELSE 0 END +
-              CASE WHEN :keyword3 <> '' AND (lower(a.title) LIKE '%' || lower(:keyword3) || '%' OR lower(a.shortDescription) LIKE '%' || lower(:keyword3) || '%') THEN 8 ELSE 0 END +
-              CASE WHEN :keyword4 <> '' AND (lower(a.title) LIKE '%' || lower(:keyword4) || '%' OR lower(a.shortDescription) LIKE '%' || lower(:keyword4) || '%') THEN 8 ELSE 0 END +
-              CASE WHEN :keyword5 <> '' AND (lower(a.title) LIKE '%' || lower(:keyword5) || '%' OR lower(a.shortDescription) LIKE '%' || lower(:keyword5) || '%') THEN 8 ELSE 0 END
+              CASE WHEN :keyword1 <> '' AND lower(a.title) LIKE '%' || lower(:keyword1) || '%' THEN 8 ELSE 0 END +
+              CASE WHEN :keyword2 <> '' AND lower(a.title) LIKE '%' || lower(:keyword2) || '%' THEN 8 ELSE 0 END +
+              CASE WHEN :keyword3 <> '' AND lower(a.title) LIKE '%' || lower(:keyword3) || '%' THEN 8 ELSE 0 END +
+              CASE WHEN :keyword4 <> '' AND lower(a.title) LIKE '%' || lower(:keyword4) || '%' THEN 8 ELSE 0 END +
+              CASE WHEN :keyword5 <> '' AND lower(a.title) LIKE '%' || lower(:keyword5) || '%' THEN 8 ELSE 0 END
           ) END DESC,
           CASE WHEN :sortMode = 2 THEN a.isUnread END DESC,
           CASE WHEN :sortMode = 3 THEN a.date END ASC,

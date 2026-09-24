@@ -24,11 +24,9 @@ fun PagingData<ArticleWithFeed>.filterUnreadAndDistinctByArticleTitle(
     return filter { articleWithFeed ->
         withContext(dispatcher) {
             val article = articleWithFeed.article
-            val isUnread = unreadOverrides[article.id] ?: article.isUnread
-            if (unreadOnly && !isUnread) {
+            if (unreadOnly && !(unreadOverrides[article.id] ?: article.isUnread)) {
                 return@withContext false
             }
-
             val title = article.title
                 .trim()
                 .replace(articleTitleWhitespace, " ")
@@ -74,7 +72,7 @@ fun PagingData<ArticleWithFeed>.mapPagingFlowItem(
                 date = article.date,
                 onlyHourMinute = true
             )
-        }, ArticleInterestScorer.score(interests[it.article.id], it.article.title, keywords, it.article.shortDescription))
+        }, ArticleInterestScorer.score(interests[it.article.id], it.article.title, keywords))
     }.insertSeparators { before, after ->
         val beforeDate =
             androidStringsHelper.formatAsString(before?.articleWithFeed?.article?.date)
