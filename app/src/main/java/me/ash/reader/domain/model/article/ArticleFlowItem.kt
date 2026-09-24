@@ -15,13 +15,21 @@ private val articleTitleWhitespace = Regex("\\s+")
  * Hide repeated article titles as pages arrive, without scanning the full article table in SQL.
  * The first article in the active sort order is kept; blank titles are left untouched.
  */
-fun PagingData<ArticleWithFeed>.distinctByArticleTitle(
+fun PagingData<ArticleWithFeed>.filterUnreadAndDistinctByArticleTitle(
     dispatcher: CoroutineDispatcher,
+    unreadOnly: Boolean,
+    unreadOverrides: Map<String, Boolean>,
 ): PagingData<ArticleWithFeed> {
     val seenTitles = HashSet<String>()
     return filter { articleWithFeed ->
         withContext(dispatcher) {
-            val title = articleWithFeed.article.title
+            val article = articleWithFeed.article
+            val isUnread = unreadOverrides[article.id] ?: article.isUnread
+            if (unreadOnly && !isUnread) {
+                return@withContext false
+            }
+
+            val title = article.title
                 .trim()
                 .replace(articleTitleWhitespace, " ")
                 .lowercase(Locale.ROOT)
@@ -49,7 +57,7 @@ sealed class ArticleFlowItem {
      *
      * @see me.ash.reader.ui.page.home.flow.StickyHeader
      */
-    class Date(val date: String, val showSpacer: Boolean) : ArticleFlowItem()
+    class Date(val date: String, val showSpacer: Boolean, val key: String) : ArticleFlowItem()
 }
 
 /**
@@ -73,7 +81,15 @@ fun PagingData<ArticleWithFeed>.mapPagingFlowItem(
         val afterDate =
             androidStringsHelper.formatAsString(after?.articleWithFeed?.article?.date)
         if (beforeDate != afterDate) {
-            afterDate?.let { ArticleFlowItem.Date(it, beforeDate != null) }
+            after?.let { afterItem ->
+                afterDate?.let {
+                    ArticleFlowItem.Date(
+                        date = it,
+                        showSpacer = beforeDate != null,
+                        key = "date:${afterItem.articleWithFeed.article.id}",
+                    )
+                }
+            }
         } else {
             null
         }

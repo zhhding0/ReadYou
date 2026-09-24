@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.ash.reader.domain.model.article.ArticleFlowItem
-import me.ash.reader.domain.model.article.distinctByArticleTitle
+import me.ash.reader.domain.model.article.filterUnreadAndDistinctByArticleTitle
 import me.ash.reader.domain.model.article.mapPagingFlowItem
 import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.ArticleInterestDao
@@ -46,6 +46,7 @@ constructor(
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
     private val settingsProvider: SettingsProvider,
+    private val diffMapHolder: DiffMapHolder,
     private val filterStateUseCase: FilterStateUseCase,
     private val accountService: AccountService,
     private val articleDao: ArticleDao,
@@ -85,7 +86,10 @@ constructor(
                     }
                 }
                 .combine(settingsProvider.settingsFlow) { data, settings -> data to settings }
-                .collect { (data, settings) ->
+                .combine(diffMapHolder.diffMapSnapshotFlow) { (data, settings), diffs ->
+                    Triple(data, settings, diffs)
+                }
+                .collect { (data, settings, diffs) ->
                     val (filterState, accountId, interests) = data
                     val searchContent = filterState.searchContent
                     val keywords = settings.interestKeywords.split(',', '\n')
@@ -122,7 +126,11 @@ constructor(
                                 }
                                 .flow
                                 .map {
-                                    it.distinctByArticleTitle(defaultDispatcher).mapPagingFlowItem(
+                                    it.filterUnreadAndDistinctByArticleTitle(
+                                        dispatcher = defaultDispatcher,
+                                        unreadOnly = filterState.filter.isUnread(),
+                                        unreadOverrides = diffs.mapValues { (_, diff) -> diff.isUnread },
+                                    ).mapPagingFlowItem(
                                         androidStringsHelper = androidStringsHelper,
                                         interests = interests,
                                         keywords = keywords,

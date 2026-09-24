@@ -118,7 +118,7 @@ fun LazyListScope.ArticleList(
 private fun key(item: ArticleFlowItem): String {
     return when (item) {
         is ArticleFlowItem.Article -> item.articleWithFeed.article.id
-        is ArticleFlowItem.Date -> item.date
+        is ArticleFlowItem.Date -> item.key
     }
 }
 
