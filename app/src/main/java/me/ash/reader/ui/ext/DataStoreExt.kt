@@ -327,6 +327,7 @@ data class DataStoreKey<T>(val key: Preferences.Key<T>, val type: Class<T>) {
         const val flowArticleListTonalElevation = "flowArticleListTonalElevation"
         const val flowArticleListReadIndicator = "flowArticleListReadStatusIndicator"
         const val flowSortUnreadArticles = "flowArticleListSortUnreadArticles"
+        const val flowSortArticles = "flowArticleListSortMode"
 
         // Reading page
         const val readingRenderer = "readingRender"
@@ -363,6 +364,7 @@ data class DataStoreKey<T>(val key: Preferences.Key<T>, val type: Class<T>) {
         const val openLink = "openLink"
         const val openLinkAppSpecificBrowser = "openLinkAppSpecificBrowser"
         const val sharedContent = "sharedContent"
+        const val interestKeywords = "articleInterestKeywords"
 
         // Languages
         const val languages = "languages"
@@ -447,6 +449,8 @@ data class DataStoreKey<T>(val key: Preferences.Key<T>, val type: Class<T>) {
                         booleanPreferencesKey(flowSortUnreadArticles),
                         Boolean::class.java,
                     ),
+                flowSortArticles to
+                    DataStoreKey(stringPreferencesKey(flowSortArticles), String::class.java),
                 // Reading page
                 readingRenderer to
                     DataStoreKey(intPreferencesKey(readingRenderer), Int::class.java),
@@ -515,6 +519,8 @@ data class DataStoreKey<T>(val key: Preferences.Key<T>, val type: Class<T>) {
                         String::class.java,
                     ),
                 sharedContent to DataStoreKey(intPreferencesKey(sharedContent), Int::class.java),
+                interestKeywords to
+                    DataStoreKey(stringPreferencesKey(interestKeywords), String::class.java),
                 // Languages
                 languages to DataStoreKey(intPreferencesKey(languages), Int::class.java),
             )
