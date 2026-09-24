@@ -25,12 +25,14 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.ash.reader.domain.model.article.ArticleFlowItem
+import me.ash.reader.domain.model.article.distinctByArticleTitle
 import me.ash.reader.domain.model.article.mapPagingFlowItem
 import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.ArticleInterestDao
 import me.ash.reader.domain.service.AccountService
 import me.ash.reader.infrastructure.android.AndroidStringsHelper
 import me.ash.reader.infrastructure.di.ApplicationScope
+import me.ash.reader.infrastructure.di.DefaultDispatcher
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.preference.SettingsProvider
 import me.ash.reader.infrastructure.preference.FlowSortPreference
@@ -42,6 +44,7 @@ constructor(
     private val androidStringsHelper: AndroidStringsHelper,
     @ApplicationScope private val applicationScope: CoroutineScope,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
+    @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
     private val settingsProvider: SettingsProvider,
     private val filterStateUseCase: FilterStateUseCase,
     private val accountService: AccountService,
@@ -119,10 +122,10 @@ constructor(
                                 }
                                 .flow
                                 .map {
-                                    it.mapPagingFlowItem(
-                                        androidStringsHelper,
-                                        interests,
-                                        keywords,
+                                    it.distinctByArticleTitle(defaultDispatcher).mapPagingFlowItem(
+                                        androidStringsHelper = androidStringsHelper,
+                                        interests = interests,
+                                        keywords = keywords,
                                     )
                                 }
                                 .cachedIn(applicationScope),

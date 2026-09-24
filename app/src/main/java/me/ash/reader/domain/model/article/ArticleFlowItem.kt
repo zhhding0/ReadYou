@@ -1,9 +1,34 @@
 package me.ash.reader.domain.model.article
 
 import androidx.paging.PagingData
+import androidx.paging.filter
 import androidx.paging.insertSeparators
 import androidx.paging.map
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import me.ash.reader.infrastructure.android.AndroidStringsHelper
+import java.util.Locale
+
+private val articleTitleWhitespace = Regex("\\s+")
+
+/**
+ * Hide repeated article titles as pages arrive, without scanning the full article table in SQL.
+ * The first article in the active sort order is kept; blank titles are left untouched.
+ */
+fun PagingData<ArticleWithFeed>.distinctByArticleTitle(
+    dispatcher: CoroutineDispatcher,
+): PagingData<ArticleWithFeed> {
+    val seenTitles = HashSet<String>()
+    return filter { articleWithFeed ->
+        withContext(dispatcher) {
+            val title = articleWithFeed.article.title
+                .trim()
+                .replace(articleTitleWhitespace, " ")
+                .lowercase(Locale.ROOT)
+            title.isBlank() || seenTitles.add(title)
+        }
+    }
+}
 
 /**
  * Provide paginated and inserted separator data types for article list view.

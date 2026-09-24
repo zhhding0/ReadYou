@@ -32,17 +32,7 @@ interface ArticleDao {
           AND (:groupId IS NULL OR f.groupId = :groupId)
           AND (:filterType = 0 OR (:filterType = 1 AND a.isStarred = 1) OR (:filterType = 2 AND a.isUnread = 1))
           AND (:search IS NULL OR a.title LIKE '%' || :search || '%' OR a.shortDescription LIKE '%' || :search || '%' OR a.rawDescription LIKE '%' || :search || '%' OR a.fullContent LIKE '%' || :search || '%')
-          AND (trim(a.link) = '' OR NOT EXISTS (
-              SELECT 1 FROM article d
-              LEFT JOIN article_interest di ON di.accountId = d.accountId AND di.articleId = d.id
-              WHERE trim(d.link) != '' AND d.accountId = a.accountId AND d.id != a.id
-                AND lower(trim(trim(replace(replace(replace(lower(d.link), 'https://', ''), 'http://', ''), 'www.', ''), '/'), '#')) =
-                    lower(trim(trim(replace(replace(replace(lower(a.link), 'https://', ''), 'http://', ''), 'www.', ''), '/'), '#'))
-                AND (COALESCE(di.feedback, 0) > COALESCE(i.feedback, 0) OR
-                    (COALESCE(di.feedback, 0) = COALESCE(i.feedback, 0) AND
-                        (d.date > a.date OR (d.date = a.date AND d.id > a.id))))
-          ))
-        ORDER BY
+          ORDER BY
           CASE WHEN :sortMode = 1 THEN (
               COALESCE(i.feedback, 0) * CASE WHEN i.feedback < 0 THEN 60 ELSE 40 END +
               CASE WHEN i.openMillis >= 30000 THEN 10 WHEN i.openMillis >= 5000 THEN 4 ELSE 0 END +
