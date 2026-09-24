@@ -11,8 +11,9 @@ import me.ash.reader.domain.data.ArticlePagingListUseCase
 import me.ash.reader.domain.data.DiffMapHolder
 import me.ash.reader.domain.data.FilterStateUseCase
 import me.ash.reader.domain.data.GroupWithFeedsListUseCase
+import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.domain.repository.ArticleInterestDao
 import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.RssService
 import me.ash.reader.infrastructure.android.AndroidStringsHelper
 import me.ash.reader.infrastructure.preference.SettingsProvider
 
@@ -23,22 +24,24 @@ object UseCaseModule {
     @Provides
     @Singleton
     fun providesArticlePagingList(
-        rssService: RssService,
         androidStringsHelper: AndroidStringsHelper,
         @ApplicationScope applicationScope: CoroutineScope,
         @IODispatcher ioDispatcher: CoroutineDispatcher,
         settingsProvider: SettingsProvider,
         filterStateUseCase: FilterStateUseCase,
         accountService: AccountService,
+        articleDao: ArticleDao,
+        articleInterestDao: ArticleInterestDao,
     ): ArticlePagingListUseCase {
         return ArticlePagingListUseCase(
-            rssService,
             androidStringsHelper,
             applicationScope,
             ioDispatcher,
             settingsProvider,
             filterStateUseCase,
             accountService,
+            articleDao,
+            articleInterestDao,
         )
     }
 
