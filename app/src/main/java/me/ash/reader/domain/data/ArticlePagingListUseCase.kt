@@ -14,6 +14,7 @@ import javax.inject.Inject
 import kotlin.text.trim
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +35,7 @@ import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.preference.SettingsProvider
 import me.ash.reader.infrastructure.preference.FlowSortPreference
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ArticlePagingListUseCase
 @Inject
 constructor(

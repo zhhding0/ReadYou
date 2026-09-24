@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -54,7 +55,7 @@ import me.ash.reader.ui.component.base.RadioDialog
 import me.ash.reader.ui.component.base.RadioDialogOption
 import me.ash.reader.ui.component.base.Subtitle
 import me.ash.reader.ui.ext.getBrowserAppList
-import me.ash.reader.ui.ext.DataStoreKey
+import me.ash.reader.ui.ext.PreferencesKey
 import me.ash.reader.ui.ext.dataStore
 import me.ash.reader.ui.ext.put
 import me.ash.reader.ui.page.settings.SettingItem
@@ -387,7 +388,12 @@ fun InteractionPage(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    scope.launch { context.dataStore.put(DataStoreKey.interestKeywords, keywordDraft) }
+                    scope.launch {
+                        context.dataStore.put(
+                            stringPreferencesKey(PreferencesKey.interestKeywords),
+                            keywordDraft,
+                        )
+                    }
                     showKeywordsDialog = false
                 }) { Text(stringResource(android.R.string.ok)) }
             },
