@@ -10,12 +10,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -34,11 +39,11 @@ import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.infrastructure.preference.LocalPullToSwitchArticle
 import me.ash.reader.infrastructure.preference.LocalSettings
 import me.ash.reader.infrastructure.preference.LocalSharedContent
-import me.ash.reader.infrastructure.preference.LocalSortUnreadArticles
+import me.ash.reader.infrastructure.preference.LocalFlowSort
+import me.ash.reader.infrastructure.preference.FlowSortPreference
 import me.ash.reader.infrastructure.preference.OpenLinkPreference
 import me.ash.reader.infrastructure.preference.PullToLoadNextFeedPreference
 import me.ash.reader.infrastructure.preference.SharedContentPreference
-import me.ash.reader.infrastructure.preference.SortUnreadArticlesPreference
 import me.ash.reader.infrastructure.preference.SwipeEndActionPreference
 import me.ash.reader.infrastructure.preference.SwipeStartActionPreference
 import me.ash.reader.ui.component.base.DisplayText
@@ -49,6 +54,9 @@ import me.ash.reader.ui.component.base.RadioDialog
 import me.ash.reader.ui.component.base.RadioDialogOption
 import me.ash.reader.ui.component.base.Subtitle
 import me.ash.reader.ui.ext.getBrowserAppList
+import me.ash.reader.ui.ext.DataStoreKey
+import me.ash.reader.ui.ext.dataStore
+import me.ash.reader.ui.ext.put
 import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.ui.theme.palette.onLight
 
@@ -63,7 +71,7 @@ fun InteractionPage(
     val swipeToEndAction = LocalArticleListSwipeEndAction.current
     val markAsReadOnScroll = LocalMarkAsReadOnScroll.current
     val hideEmptyGroups = LocalHideEmptyGroups.current
-    val sortUnreadArticles = LocalSortUnreadArticles.current
+    val flowSort = LocalFlowSort.current
     val pullToSwitchArticle = LocalPullToSwitchArticle.current
     val openLink = LocalOpenLink.current
     val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
@@ -82,7 +90,9 @@ fun InteractionPage(
     var openLinkDialogVisible by remember { mutableStateOf(false) }
     var openLinkSpecificBrowserDialogVisible by remember { mutableStateOf(false) }
     var sharedContentDialogVisible by remember { mutableStateOf(false) }
-    var showSortUnreadArticlesDialog by remember { mutableStateOf(false) }
+    var showFlowSortDialog by remember { mutableStateOf(false) }
+    var showKeywordsDialog by remember { mutableStateOf(false) }
+    var keywordDraft by remember { mutableStateOf(settings.interestKeywords) }
     var showPullToLoadDialog by remember { mutableStateOf(false) }
 
     RYScaffold(
@@ -158,13 +168,19 @@ fun InteractionPage(
                     ) {}
 
                     SettingItem(
-                        title = stringResource(R.string.sort_unread_articles),
+                        title = stringResource(R.string.article_flow_sort),
+                        desc = flowSort.description(),
+                        onClick = { showFlowSortDialog = true },
+                    ) {}
+
+                    SettingItem(
+                        title = stringResource(R.string.interest_keywords),
+                        desc = settings.interestKeywords.ifBlank { stringResource(R.string.interest_keywords_hint) },
                         onClick = {
-                            showSortUnreadArticlesDialog = true
+                            keywordDraft = settings.interestKeywords
+                            showKeywordsDialog = true
                         },
-                        desc = sortUnreadArticles.description()
-                    ) {
-                    }
+                    ) {}
 
                     SettingItem(
                         title = stringResource(R.string.mark_as_read_on_scroll),
@@ -357,20 +373,37 @@ fun InteractionPage(
         sharedContentDialogVisible = false
     }
 
+    if (showKeywordsDialog) {
+        AlertDialog(
+            onDismissRequest = { showKeywordsDialog = false },
+            title = { Text(stringResource(R.string.interest_keywords)) },
+            text = {
+                OutlinedTextField(
+                    value = keywordDraft,
+                    onValueChange = { keywordDraft = it },
+                    label = { Text(stringResource(R.string.interest_keywords_hint)) },
+                    minLines = 2,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch { context.dataStore.put(DataStoreKey.interestKeywords, keywordDraft) }
+                    showKeywordsDialog = false
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showKeywordsDialog = false }) { Text(stringResource(android.R.string.cancel)) }
+            },
+        )
+    }
+
     RadioDialog(
-        visible = showSortUnreadArticlesDialog,
-        title = stringResource(R.string.sort_unread_articles),
-        options = SortUnreadArticlesPreference.values.map {
-            RadioDialogOption(
-                text = it.description(),
-                selected = it == sortUnreadArticles,
-            ) {
-                it.put(context, scope)
-            }
+        visible = showFlowSortDialog,
+        title = stringResource(R.string.article_flow_sort),
+        options = FlowSortPreference.entries.map {
+            RadioDialogOption(text = it.description(), selected = it == flowSort) { it.put(context, scope) }
         },
-        onDismissRequest = {
-            showSortUnreadArticlesDialog = false
-        }
+        onDismissRequest = { showFlowSortDialog = false },
     )
 
     RadioDialog(

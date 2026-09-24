@@ -161,6 +161,8 @@ sealed interface PreferencesKey {
         const val flowArticleListTonalElevation = "flowArticleListTonalElevation"
         const val flowArticleListReadIndicator = "flowArticleListReadStatusIndicator"
         const val flowSortUnreadArticles = "flowArticleListSortUnreadArticles"
+        const val flowSortArticles = "flowArticleListSortMode"
+        const val interestKeywords = "articleInterestKeywords"
 
         // Reading page
         const val readingRenderer = "readingRender"
@@ -239,6 +241,8 @@ sealed interface PreferencesKey {
                 IntKey(flowArticleListTonalElevation),
                 IntKey(flowArticleListReadIndicator),
                 BooleanKey(flowSortUnreadArticles),
+                StringKey(flowSortArticles),
+                StringKey(interestKeywords),
                 // Reading page
                 IntKey(readingRenderer),
                 BooleanKey(readingBoldCharacters),

@@ -43,6 +43,8 @@ data class Settings(
     val flowArticleListTonalElevation: FlowArticleListTonalElevationPreference = FlowArticleListTonalElevationPreference.default,
     val flowArticleListReadIndicator: FlowArticleReadIndicatorPreference = FlowArticleReadIndicatorPreference.default,
     val flowSortUnreadArticles: SortUnreadArticlesPreference = SortUnreadArticlesPreference.default,
+    val flowSortArticles: FlowSortPreference = FlowSortPreference.Latest,
+    val interestKeywords: String = "",
 
     // Reading page
     val readingRenderer: ReadingRendererPreference = ReadingRendererPreference.default,
@@ -83,4 +85,3 @@ data class Settings(
     // Languages
     val languages: LanguagesPreference = LanguagesPreference.default,
 )
-

@@ -89,6 +89,7 @@ private const val TAG = "ArticleItem"
 fun ArticleItem(
     modifier: Modifier = Modifier,
     articleWithFeed: ArticleWithFeed,
+    interestScore: Int = 0,
     isUnread: Boolean = articleWithFeed.article.isUnread,
     onClick: (ArticleWithFeed) -> Unit = {},
     onLongClick: (() -> Unit)? = null,
@@ -106,6 +107,7 @@ fun ArticleItem(
         imgData = article.img,
         isStarred = article.isStarred,
         isUnread = isUnread,
+        interestScore = interestScore,
         onClick = { onClick(articleWithFeed) },
         onLongClick = onLongClick,
     )
@@ -123,6 +125,7 @@ fun ArticleItem(
     imgData: Any? = null,
     isStarred: Boolean = false,
     isUnread: Boolean = false,
+    interestScore: Int = 0,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -191,6 +194,12 @@ fun ArticleItem(
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
+                    Text(
+                        text = stringResource(R.string.interest_score, interestScore),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(start = 6.dp),
+                    )
                 }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -209,6 +218,12 @@ fun ArticleItem(
                             StarredIcon()
                         }
                     }
+                    Text(
+                        text = stringResource(R.string.interest_score, interestScore),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(start = 6.dp),
+                    )
                 }
             }
 
@@ -310,6 +325,7 @@ private const val SwipeActionDelay = 300L
 @Composable
 fun SwipeableArticleItem(
     articleWithFeed: ArticleWithFeed,
+    interestScore: Int = 0,
     isUnread: Boolean = articleWithFeed.article.isUnread,
     articleListTonalElevation: Int = 0,
     onClick: (ArticleWithFeed) -> Unit = {},
@@ -317,6 +333,7 @@ fun SwipeableArticleItem(
     isMenuEnabled: Boolean = true,
     onToggleStarred: (ArticleWithFeed) -> Unit = {},
     onToggleRead: (ArticleWithFeed) -> Unit = {},
+    onInterestFeedback: (ArticleWithFeed, Int) -> Unit = { _, _ -> },
     onMarkAboveAsRead: ((ArticleWithFeed) -> Unit)? = null,
     onMarkBelowAsRead: ((ArticleWithFeed) -> Unit)? = null,
     onShare: ((ArticleWithFeed) -> Unit)? = null,
@@ -361,6 +378,7 @@ fun SwipeableArticleItem(
             ArticleItem(
                 articleWithFeed = articleWithFeed,
                 isUnread = isUnread,
+                interestScore = interestScore,
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
@@ -378,6 +396,7 @@ fun SwipeableArticleItem(
                             isRead = !isUnread,
                             onToggleStarred = onToggleStarred,
                             onToggleRead = onToggleRead,
+                            onInterestFeedback = onInterestFeedback,
                             onMarkAboveAsRead = onMarkAboveAsRead,
                             onMarkBelowAsRead = onMarkBelowAsRead,
                             onShare = onShare,
@@ -568,6 +587,7 @@ fun ArticleItemMenuContent(
     isRead: Boolean = false,
     onToggleStarred: (ArticleWithFeed) -> Unit = {},
     onToggleRead: (ArticleWithFeed) -> Unit = {},
+    onInterestFeedback: (ArticleWithFeed, Int) -> Unit = { _, _ -> },
     onMarkAboveAsRead: ((ArticleWithFeed) -> Unit)? = null,
     onMarkBelowAsRead: ((ArticleWithFeed) -> Unit)? = null,
     onShare: ((ArticleWithFeed) -> Unit)? = null,
@@ -613,6 +633,15 @@ fun ArticleItemMenuContent(
                 modifier = Modifier.size(iconSize),
             )
         },
+    )
+
+    DropdownMenuItem(
+        text = { Text(text = stringResource(R.string.interested)) },
+        onClick = { onInterestFeedback(articleWithFeed, 1); onItemClick?.invoke() },
+    )
+    DropdownMenuItem(
+        text = { Text(text = stringResource(R.string.not_interested)) },
+        onClick = { onInterestFeedback(articleWithFeed, -1); onItemClick?.invoke() },
     )
 
     if (onMarkAboveAsRead != null || onMarkBelowAsRead != null) {

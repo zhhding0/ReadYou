@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import java.util.concurrent.Executors
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -164,6 +165,15 @@ fun ArticleListReaderPage(
                 exitTransition = motionDataProvider.calculateExitTransition(paneRole),
             ) {
                 val contentKey = navigator.currentDestination?.contentKey
+                LaunchedEffect(contentKey?.articleId) {
+                    val articleId = contentKey?.articleId ?: return@LaunchedEffect
+                    val openedAt = System.currentTimeMillis()
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        viewModel.recordArticleOpened(articleId, System.currentTimeMillis() - openedAt)
+                    }
+                }
                 LaunchedEffect(contentKey) {
                     if (contentKey == null) {
                         delay(100L)

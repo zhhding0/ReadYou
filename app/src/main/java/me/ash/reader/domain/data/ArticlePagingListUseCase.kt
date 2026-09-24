@@ -20,27 +20,31 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.ash.reader.domain.model.article.ArticleFlowItem
 import me.ash.reader.domain.model.article.mapPagingFlowItem
+import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.domain.repository.ArticleInterestDao
 import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.RssService
 import me.ash.reader.infrastructure.android.AndroidStringsHelper
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.preference.SettingsProvider
+import me.ash.reader.infrastructure.preference.FlowSortPreference
 
 class ArticlePagingListUseCase
 @Inject
 constructor(
-    private val rssService: RssService,
     private val androidStringsHelper: AndroidStringsHelper,
     @ApplicationScope private val applicationScope: CoroutineScope,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
     private val settingsProvider: SettingsProvider,
     private val filterStateUseCase: FilterStateUseCase,
     private val accountService: AccountService,
+    private val articleDao: ArticleDao,
+    private val articleInterestDao: ArticleInterestDao,
 ) {
 
     private val mutablePagerFlow =
@@ -69,46 +73,56 @@ constructor(
     init {
         applicationScope.launch(ioDispatcher) {
             filterStateUseCase.filterStateFlow
-                .combine(accountService.currentAccountIdFlow) { filterState, accountId ->
-                    filterState
+                .combine(accountService.currentAccountIdFlow) { filterState, accountId -> filterState to accountId }
+                .flatMapLatest { (filterState, accountId) ->
+                    articleInterestDao.observeForAccount(accountId ?: -1).map { interests ->
+                        Triple(filterState, accountId, interests.associateBy { it.articleId })
+                    }
                 }
-                .collect { filterState ->
+                .combine(settingsProvider.settingsFlow) { data, settings -> data to settings }
+                .collect { (data, settings) ->
+                    val (filterState, accountId, interests) = data
                     val searchContent = filterState.searchContent
+                    val keywords = settings.interestKeywords.split(',', '\n')
+                        .map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(5)
+                    val keywordParams = keywords + List(5 - keywords.size) { "" }
 
                     mutablePagerFlow.value =
                         PagerData(
                             Pager(
                                     config = PagingConfig(pageSize = 50, enablePlaceholders = false)
                                 ) {
-                                    if (!searchContent.isNullOrBlank()) {
-                                        rssService
-                                            .get()
-                                            .searchArticles(
-                                                content = searchContent.trim(),
-                                                groupId = filterState.group?.id,
-                                                feedId = filterState.feed?.id,
-                                                isStarred = filterState.filter.isStarred(),
-                                                isUnread = filterState.filter.isUnread(),
-                                                sortAscending =
-                                                    settingsProvider.settings.flowSortUnreadArticles
-                                                        .value,
-                                            )
-                                    } else {
-                                        rssService
-                                            .get()
-                                            .pullArticles(
-                                                groupId = filterState.group?.id,
-                                                feedId = filterState.feed?.id,
-                                                isStarred = filterState.filter.isStarred(),
-                                                isUnread = filterState.filter.isUnread(),
-                                                sortAscending =
-                                                    settingsProvider.settings.flowSortUnreadArticles
-                                                        .value,
-                                            )
-                                    }
+                                    articleDao.queryRecommendedArticleWithFeed(
+                                        accountId = accountId ?: -1,
+                                        feedId = filterState.feed?.id,
+                                        groupId = filterState.group?.id,
+                                        filterType = when {
+                                            filterState.filter.isStarred() -> 1
+                                            filterState.filter.isUnread() -> 2
+                                            else -> 0
+                                        },
+                                        search = searchContent?.trim()?.takeIf { it.isNotBlank() },
+                                        sortMode = when (settings.flowSortArticles) {
+                                            FlowSortPreference.Latest -> 0
+                                            FlowSortPreference.Recommended -> 1
+                                            FlowSortPreference.UnreadFirst -> 2
+                                            FlowSortPreference.Oldest -> 3
+                                        },
+                                        keyword1 = keywordParams[0],
+                                        keyword2 = keywordParams[1],
+                                        keyword3 = keywordParams[2],
+                                        keyword4 = keywordParams[3],
+                                        keyword5 = keywordParams[4],
+                                    )
                                 }
                                 .flow
-                                .map { it.mapPagingFlowItem(androidStringsHelper) }
+                                .map {
+                                    it.mapPagingFlowItem(
+                                        androidStringsHelper,
+                                        interests,
+                                        keywords,
+                                    )
+                                }
                                 .cachedIn(applicationScope),
                             filterState = filterState,
                         )

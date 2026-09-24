@@ -86,9 +86,9 @@ import me.ash.reader.infrastructure.preference.LocalOpenLink
 import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.infrastructure.preference.LocalSettings
 import me.ash.reader.infrastructure.preference.LocalSharedContent
-import me.ash.reader.infrastructure.preference.LocalSortUnreadArticles
+import me.ash.reader.infrastructure.preference.LocalFlowSort
 import me.ash.reader.infrastructure.preference.PullToLoadNextFeedPreference
-import me.ash.reader.infrastructure.preference.SortUnreadArticlesPreference
+import me.ash.reader.infrastructure.preference.FlowSortPreference
 import me.ash.reader.ui.component.FilterBar
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYExtensibleVisibility
@@ -191,7 +191,7 @@ fun FlowPage(
 
     val sortByEarliest =
         filterUiState.filter.isUnread() &&
-            LocalSortUnreadArticles.current == SortUnreadArticlesPreference.Earliest
+            LocalFlowSort.current == FlowSortPreference.Oldest
 
     val onMarkAboveAsRead: ((ArticleWithFeed) -> Unit)? =
         remember(sortByEarliest) {
@@ -215,6 +215,7 @@ fun FlowPage(
 
     val onShare: ((ArticleWithFeed) -> Unit)? = remember {
         { articleWithFeed ->
+            viewModel.recordArticleShared(articleWithFeed.article.id)
             with(articleWithFeed.article) { sharedContent.share(context, title, link) }
         }
     }
@@ -689,6 +690,9 @@ fun FlowPage(
                                 },
                                 onToggleStarred = onToggleStarred,
                                 onToggleRead = onToggleRead,
+                                onInterestFeedback = { article, feedback ->
+                                    viewModel.setInterestFeedback(article.article.id, feedback)
+                                },
                                 onMarkAboveAsRead = onMarkAboveAsRead,
                                 onMarkBelowAsRead = onMarkBelowAsRead,
                                 onShare = onShare,

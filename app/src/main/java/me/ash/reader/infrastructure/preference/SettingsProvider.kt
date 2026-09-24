@@ -102,6 +102,7 @@ class SettingsProvider @Inject constructor(
             LocalFlowFilterBarTonalElevation provides settings.flowFilterBarTonalElevation,
             LocalFlowArticleListReadIndicator provides settings.flowArticleListReadIndicator,
             LocalSortUnreadArticles provides settings.flowSortUnreadArticles,
+            LocalFlowSort provides settings.flowSortArticles,
 
             // Reading page
             LocalReadingRenderer provides settings.readingRenderer,

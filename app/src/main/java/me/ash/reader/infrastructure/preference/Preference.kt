@@ -3,6 +3,7 @@ package me.ash.reader.infrastructure.preference
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.CoroutineScope
+import me.ash.reader.ui.ext.DataStoreKey
 
 sealed class Preference {
 
@@ -50,6 +51,8 @@ fun Preferences.toSettings(): Settings {
         flowArticleListReadIndicator = FlowArticleReadIndicatorPreference.fromPreferences(this),
         flowArticleListTonalElevation = FlowArticleListTonalElevationPreference.fromPreferences(this),
         flowSortUnreadArticles = SortUnreadArticlesPreference.fromPreferences(this),
+        flowSortArticles = FlowSortPreference.fromPreferences(this),
+        interestKeywords = this[androidx.datastore.preferences.core.stringPreferencesKey(DataStoreKey.interestKeywords)] ?: "",
 
         // Reading page
         readingRenderer = ReadingRendererPreference.fromPreferences(this),

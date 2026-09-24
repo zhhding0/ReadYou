@@ -17,7 +17,7 @@ sealed class ArticleFlowItem {
      *
      * @see me.ash.reader.ui.page.home.flow.ArticleItem
      */
-    class Article(val articleWithFeed: ArticleWithFeed) : ArticleFlowItem()
+    class Article(val articleWithFeed: ArticleWithFeed, val interestScore: Int = 0) : ArticleFlowItem()
 
     /**
      * The feed publication date separator between [Article] items.
@@ -30,14 +30,18 @@ sealed class ArticleFlowItem {
 /**
  * Mapping [ArticleWithFeed] list to [ArticleFlowItem] list.
  */
-fun PagingData<ArticleWithFeed>.mapPagingFlowItem(androidStringsHelper: AndroidStringsHelper): PagingData<ArticleFlowItem> =
+fun PagingData<ArticleWithFeed>.mapPagingFlowItem(
+    androidStringsHelper: AndroidStringsHelper,
+    interests: Map<String, ArticleInterest> = emptyMap(),
+    keywords: List<String> = emptyList(),
+): PagingData<ArticleFlowItem> =
     map {
         ArticleFlowItem.Article(it.apply {
             article.dateString = androidStringsHelper.formatAsString(
                 date = article.date,
                 onlyHourMinute = true
             )
-        })
+        }, ArticleInterestScorer.score(interests[it.article.id], it.article.title, keywords, it.article.shortDescription))
     }.insertSeparators { before, after ->
         val beforeDate =
             androidStringsHelper.formatAsString(before?.articleWithFeed?.article?.date)

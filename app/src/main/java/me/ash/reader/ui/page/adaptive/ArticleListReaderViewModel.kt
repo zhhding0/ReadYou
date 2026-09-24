@@ -31,11 +31,14 @@ import me.ash.reader.domain.data.FilterStateUseCase
 import me.ash.reader.domain.data.GroupWithFeedsListUseCase
 import me.ash.reader.domain.data.PagerData
 import me.ash.reader.domain.model.article.Article
+import me.ash.reader.domain.model.article.ArticleInterest
 import me.ash.reader.domain.model.article.ArticleFlowItem
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.general.MarkAsReadConditions
 import me.ash.reader.domain.service.GoogleReaderRssService
+import me.ash.reader.domain.repository.ArticleInterestDao
+import me.ash.reader.domain.service.AccountService
 import me.ash.reader.domain.service.LocalRssService
 import me.ash.reader.domain.service.RssService
 import me.ash.reader.domain.service.SyncWorker
@@ -66,6 +69,8 @@ constructor(
     val textToSpeechManager: TextToSpeechManager,
     private val imageDownloader: AndroidImageDownloader,
     private val articleListUseCase: ArticlePagingListUseCase,
+    private val articleInterestDao: ArticleInterestDao,
+    private val accountService: AccountService,
     workManager: WorkManager,
 ) : ViewModel() {
 
@@ -137,6 +142,38 @@ constructor(
     init {
         viewModelScope.launch {
             syncWorkerStatusFlow.debounce(500L).collect { _isSyncingFlow.value = it }
+        }
+    }
+
+    fun setInterestFeedback(articleId: String, feedback: Int) {
+        applicationScope.launch(ioDispatcher) {
+            val accountId = accountService.getCurrentAccountId()
+            val old = articleInterestDao.get(accountId, articleId) ?: ArticleInterest(accountId, articleId)
+            articleInterestDao.put(old.copy(feedback = feedback.coerceIn(-1, 1)))
+        }
+    }
+
+    fun recordArticleShared(articleId: String) {
+        applicationScope.launch(ioDispatcher) {
+            val accountId = accountService.getCurrentAccountId()
+            val old = articleInterestDao.get(accountId, articleId) ?: ArticleInterest(accountId, articleId)
+            articleInterestDao.put(old.copy(shares = old.shares + 1))
+        }
+    }
+
+    fun recordArticleOpened(articleId: String, elapsedMillis: Long) {
+        applicationScope.launch(ioDispatcher) {
+            val accountId = accountService.getCurrentAccountId()
+            val old = articleInterestDao.get(accountId, articleId) ?: ArticleInterest(accountId, articleId)
+            articleInterestDao.put(old.copy(openMillis = old.openMillis + elapsedMillis.coerceAtLeast(0)))
+        }
+    }
+
+    fun recordArticleCompleted(articleId: String) {
+        applicationScope.launch(ioDispatcher) {
+            val accountId = accountService.getCurrentAccountId()
+            val old = articleInterestDao.get(accountId, articleId) ?: ArticleInterest(accountId, articleId)
+            articleInterestDao.put(old.copy(completed = true))
         }
     }
 

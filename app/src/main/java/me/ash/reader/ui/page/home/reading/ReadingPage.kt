@@ -201,6 +201,18 @@ fun ReadingPage(
                                     }
 
                                 val scrollState = rememberScrollState()
+                                var completedArticleId by remember { mutableStateOf<String?>(null) }
+
+                                LaunchedEffect(scrollState.value, scrollState.maxValue, readerState.articleId) {
+                                    val articleId = readerState.articleId
+                                    if (articleId != null && scrollState.maxValue > 0 &&
+                                        scrollState.value >= scrollState.maxValue - 24 &&
+                                        completedArticleId != articleId
+                                    ) {
+                                        completedArticleId = articleId
+                                        viewModel.recordArticleCompleted(articleId)
+                                    }
+                                }
 
                                 val scope = rememberCoroutineScope()
 

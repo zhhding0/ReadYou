@@ -318,6 +318,14 @@
     <string name="latest">最新</string>
     <string name="earliest">最早</string>
     <string name="sort_unread_articles">排列未读文章顺序</string>
+    <string name="interested">喜欢，推荐更多类似内容</string>
+    <string name="not_interested">不感兴趣</string>
+    <string name="for_you">为你推荐</string>
+    <string name="unread_first">未读优先</string>
+    <string name="article_flow_sort">文档流排序</string>
+    <string name="interest_keywords">兴趣关键词</string>
+    <string name="interest_keywords_hint">用英文逗号分隔，命中的文章会加分</string>
+    <string name="interest_score">兴趣分 %1$d</string>
     <string name="short_desc">简短</string>
     <string name="long_desc">冗长</string>
     <string name="none_desc">没有</string>

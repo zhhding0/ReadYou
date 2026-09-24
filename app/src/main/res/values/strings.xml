@@ -352,6 +352,14 @@
     <string name="sponsor_desc">We build and maintain this free, open source app in our free time. If you enjoy it, please consider supporting us with a small donation! ☕️</string>
     <string name="toolbars">Toolbars</string>
     <string name="sort_unread_articles">Sort unread articles</string>
+    <string name="interested">Recommend more like this</string>
+    <string name="not_interested">Not interested</string>
+    <string name="for_you">For you</string>
+    <string name="unread_first">Unread first</string>
+    <string name="article_flow_sort">Article flow sorting</string>
+    <string name="interest_keywords">Interest keywords</string>
+    <string name="interest_keywords_hint">Comma-separated words that increase article scores</string>
+    <string name="interest_score">Score %1$d</string>
     <string name="latest">Latest</string>
     <string name="earliest">Earliest</string>
     <string name="short_desc">Short</string>

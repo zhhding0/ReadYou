@@ -8,10 +8,12 @@ import me.ash.reader.domain.model.account.*
 import me.ash.reader.domain.model.account.security.DESUtils
 import me.ash.reader.domain.model.article.ArchivedArticle
 import me.ash.reader.domain.model.article.Article
+import me.ash.reader.domain.model.article.ArticleInterest
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.repository.AccountDao
 import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.domain.repository.ArticleInterestDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
 import me.ash.reader.infrastructure.preference.*
@@ -19,8 +21,8 @@ import me.ash.reader.ui.ext.toInt
 import java.util.*
 
 @Database(
-    entities = [Account::class, Feed::class, Article::class, Group::class, ArchivedArticle::class],
-    version = 7,
+    entities = [Account::class, Feed::class, Article::class, Group::class, ArchivedArticle::class, ArticleInterest::class],
+    version = 8,
     autoMigrations = [
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 5, to = 7),
@@ -42,6 +44,7 @@ abstract class AndroidDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
     abstract fun feedDao(): FeedDao
     abstract fun articleDao(): ArticleDao
+    abstract fun articleInterestDao(): ArticleInterestDao
     abstract fun groupDao(): GroupDao
 
     companion object {
@@ -80,7 +83,18 @@ val allMigrations = arrayOf(
     MIGRATION_2_3,
     MIGRATION_3_4,
     MIGRATION_4_5,
+    MIGRATION_7_8,
 )
+
+@Suppress("ClassName")
+object MIGRATION_7_8 : Migration(7, 8) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            """CREATE TABLE IF NOT EXISTS `article_interest` (`accountId` INTEGER NOT NULL, `articleId` TEXT NOT NULL, `feedback` INTEGER NOT NULL, `openMillis` INTEGER NOT NULL, `completed` INTEGER NOT NULL, `shares` INTEGER NOT NULL, PRIMARY KEY(`accountId`, `articleId`), FOREIGN KEY(`articleId`) REFERENCES `article`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"""
+        )
+        database.execSQL("CREATE INDEX IF NOT EXISTS `index_article_interest_articleId` ON `article_interest` (`articleId`)")
+    }
+}
 
 @Suppress("ClassName")
 object MIGRATION_1_2 : Migration(1, 2) {

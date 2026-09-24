@@ -26,6 +26,7 @@ fun LazyListScope.ArticleList(
     onClick: (ArticleWithFeed, Int) -> Unit = { _, _ -> },
     onToggleStarred: (ArticleWithFeed) -> Unit = {},
     onToggleRead: (ArticleWithFeed) -> Unit = {},
+    onInterestFeedback: (ArticleWithFeed, Int) -> Unit = { _, _ -> },
     onMarkAboveAsRead: ((ArticleWithFeed) -> Unit)? = null,
     onMarkBelowAsRead: ((ArticleWithFeed) -> Unit)? = null,
     onShare: ((ArticleWithFeed) -> Unit)? = null,
@@ -44,6 +45,7 @@ fun LazyListScope.ArticleList(
                     val article = item.articleWithFeed.article
                     SwipeableArticleItem(
                         articleWithFeed = item.articleWithFeed,
+                        interestScore = item.interestScore,
                         isUnread = diffMap[article.id]?.isUnread ?: article.isUnread,
                         articleListTonalElevation = articleListTonalElevation,
                         onClick = { onClick(it, index) },
@@ -51,6 +53,7 @@ fun LazyListScope.ArticleList(
                         isMenuEnabled = isMenuEnabled,
                         onToggleStarred = onToggleStarred,
                         onToggleRead = onToggleRead,
+                        onInterestFeedback = onInterestFeedback,
                         onMarkAboveAsRead =
                             if (index == 1) null
                             else onMarkAboveAsRead, // index == 0 -> ArticleFlowItem.Date
@@ -78,6 +81,7 @@ fun LazyListScope.ArticleList(
                         val article = item.articleWithFeed.article
                         SwipeableArticleItem(
                             articleWithFeed = item.articleWithFeed,
+                            interestScore = item.interestScore,
                             isUnread = diffMap[article.id]?.isUnread ?: article.isUnread,
                             articleListTonalElevation = articleListTonalElevation,
                             onClick = { onClick(it, index) },
@@ -85,6 +89,7 @@ fun LazyListScope.ArticleList(
                             isMenuEnabled = isMenuEnabled,
                             onToggleStarred = onToggleStarred,
                             onToggleRead = onToggleRead,
+                            onInterestFeedback = onInterestFeedback,
                             onMarkAboveAsRead =
                                 if (index == 1) null
                                 else onMarkAboveAsRead, // index == 0 -> ArticleFlowItem.Date

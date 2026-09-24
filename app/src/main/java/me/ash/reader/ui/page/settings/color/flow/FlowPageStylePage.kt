@@ -38,7 +38,6 @@ fun FlowPageStylePage(
     val articleListStickyDate = LocalFlowArticleListDateStickyHeader.current
     val articleListTonalElevation = LocalFlowArticleListTonalElevation.current
     val articleListReadIndicator = LocalFlowArticleListReadIndicator.current
-    val sortUnreadArticles = LocalSortUnreadArticles.current
 
     val settings = LocalSettings.current
     val pullToSwitchFeed = settings.pullToSwitchFeed
@@ -54,7 +53,6 @@ fun FlowPageStylePage(
     var showArticleListDescDialog by remember { mutableStateOf(false) }
     var showPullToLoadDialog by remember { mutableStateOf(false) }
 
-    var showSortUnreadArticlesDialog by remember { mutableStateOf(false) }
 
     var filterBarPaddingValue: Int? by remember { mutableStateOf(filterBarPadding) }
 
@@ -194,15 +192,6 @@ fun FlowPageStylePage(
                             articleListReadIndicatorDialogVisible = true
                         }
                     )
-                    SettingItem(
-                        title = stringResource(R.string.sort_unread_articles),
-                        onClick = {
-                            showSortUnreadArticlesDialog = true
-                        },
-                        desc = sortUnreadArticles.description()
-                    ) {
-                    }
-
                     SettingItem(
                         title = stringResource(R.string.pull_from_bottom),
                         desc = pullToSwitchFeed.description(),
@@ -366,22 +355,6 @@ fun FlowPageStylePage(
     ) {
         articleListReadIndicatorDialogVisible = false
     }
-
-    RadioDialog(
-        visible = showSortUnreadArticlesDialog,
-        title = stringResource(R.string.sort_unread_articles),
-        options = SortUnreadArticlesPreference.values.map {
-            RadioDialogOption(
-                text = it.description(),
-                selected = it == sortUnreadArticles,
-            ) {
-                it.put(context, scope)
-            }
-        },
-        onDismissRequest = {
-            showSortUnreadArticlesDialog = false
-        }
-    )
 
     RadioDialog(
         visible = showPullToLoadDialog,
